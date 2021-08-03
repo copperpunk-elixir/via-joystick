@@ -18,12 +18,12 @@ defmodule ViaJoystick do
     ViaUtils.Comms.Supervisor.start_operator(__MODULE__)
     {:ok, joystick} = Joystick.start_link(0, self())
     Logger.debug("joystick: #{inspect(Joystick.info(joystick))}")
-
+    num_axes = Joystick.info(joystick).axes
     state = %{
       joystick: joystick,
-      num_axes: Joystick.info(joystick).axes,
+      num_axes: num_axes,
       num_channels: Keyword.fetch!(config, :num_channels),
-      joystick_channels: %{},
+      joystick_channels: %{num_axes => 0},
       subscriber_groups: Keyword.fetch!(config, :subscriber_groups)
     }
 
@@ -92,12 +92,12 @@ defmodule ViaJoystick do
   @impl GenServer
   def handle_info(@publish_joystick_loop, state) do
     channel_values = get_channels(state.joystick_channels, state.num_channels)
-    Logger.debug("#{ViaUtils.Format.eftb_list(channel_values, 3)}")
+    # Logger.debug("#{ViaUtils.Format.eftb_map(state.joystick_channels, 3)}")
 
     Enum.each(state.subscriber_groups, fn group ->
       ViaUtils.Comms.send_local_msg_to_group(
         __MODULE__,
-        {group, channel_values, false},
+        {group, channel_values},
         self()
       )
     end)
