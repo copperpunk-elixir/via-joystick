@@ -21,9 +21,8 @@ defmodule ViaJoystick.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-       {:joystick,
-       path: "/home/ubuntu/Documents/Github/cp-elixir/libraries/joystick"},
-       {:via_utils, path: "/home/ubuntu/Documents/Github/cp-elixir/libraries/via-utils/"},
+      {:joystick, path: "/home/ubuntu/Documents/Github/cp-elixir/libraries/joystick"},
+      {:via_utils, "~> 0.1.0"}
       # {:dep_from_hexpm, "~> 0.3.0"},
       # {:dep_from_git, git: "https://github.com/elixir-lang/my_dep.git", tag: "0.1.0"}
     ]
