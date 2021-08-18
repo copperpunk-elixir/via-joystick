@@ -9,7 +9,6 @@ defmodule ViaJoystick do
   """
 
   def start_link(config) do
-    Logger.debug("Start Uart.CommandRx")
     ViaUtils.Process.start_link_redundant(GenServer, __MODULE__, config, __MODULE__)
   end
 
@@ -17,7 +16,7 @@ defmodule ViaJoystick do
   def init(config) do
     ViaUtils.Comms.Supervisor.start_operator(__MODULE__)
     {:ok, joystick} = Joystick.start_link(0, self())
-    Logger.debug("joystick: #{inspect(Joystick.info(joystick))}")
+    Logger.debug("connect to joystick: #{inspect(Joystick.info(joystick))}")
     num_axes = Joystick.info(joystick).axes
     state = %{
       joystick: joystick,
@@ -37,7 +36,7 @@ defmodule ViaJoystick do
 
   @impl GenServer
   def handle_cast({@wait_for_all_channels_loop, publish_joystick_loop_interval_ms}, state) do
-    Logger.debug("wait for channels. currently have: #{inspect(state.joystick_channels)}")
+    # Logger.debug("wait for channels. currently have: #{inspect(state.joystick_channels)}")
     if length(get_channels(state.joystick_channels, state.num_channels)) == state.num_channels do
       ViaUtils.Process.start_loop(
         self(),
@@ -93,6 +92,7 @@ defmodule ViaJoystick do
   def handle_info(@publish_joystick_loop, state) do
     channel_values = get_channels(state.joystick_channels, state.num_channels)
     # Logger.debug("#{ViaUtils.Format.eftb_map(state.joystick_channels, 3)}")
+    # Logger.debug("#{ViaUtils.Format.eftb_list(channel_values, 3)}")
 
     Enum.each(state.subscriber_groups, fn group ->
       ViaUtils.Comms.send_local_msg_to_group(
