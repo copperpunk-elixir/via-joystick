@@ -9,29 +9,38 @@ defmodule ViaJoystick do
   """
 
   def start_link(config) do
+    Logger.debug("Start ViaJoystick GenServer")
     ViaUtils.Process.start_link_redundant(GenServer, __MODULE__, config, __MODULE__)
   end
 
   @impl GenServer
   def init(config) do
     ViaUtils.Comms.Supervisor.start_operator(__MODULE__)
-    {:ok, joystick} = Joystick.start_link(0, self())
-    Logger.debug("connect to joystick: #{inspect(Joystick.info(joystick))}")
-    num_axes = Joystick.info(joystick).axes
+
     state = %{
-      joystick: joystick,
-      num_axes: num_axes,
+      joystick: Joystick.start_link(0, self(), :joystick_connected),
+      num_axes: 0,
       num_channels: Keyword.fetch!(config, :num_channels),
-      joystick_channels: %{num_axes => 0},
+      joystick_channels: %{},
+      publish_joystick_loop_interval_ms:
+        Keyword.fetch!(config, :publish_joystick_loop_interval_ms),
       subscriber_groups: Keyword.fetch!(config, :subscriber_groups)
     }
 
+    {:ok, state}
+  end
+
+  def handle_cast({:joystick_connected, joystick}, state) do
+    Logger.debug("Via connected to joystick: #{inspect(joystick)}")
+    num_axes = joystick.axes
+
     GenServer.cast(
       __MODULE__,
-      {@wait_for_all_channels_loop, Keyword.fetch!(config, :publish_joystick_loop_interval_ms)}
+      {@wait_for_all_channels_loop, state.publish_joystick_loop_interval_ms}
     )
 
-    {:ok, state}
+    {:noreply,
+     %{state | joystick: joystick, num_axes: num_axes, joystick_channels: %{num_axes => 0}}}
   end
 
   @impl GenServer
